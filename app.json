@@ -1,0 +1,57 @@
+{
+  "expo": {
+    "name": "Admin GPS Tracker",
+    "slug": "admingps",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app needs access to your location at all times for real-time GPS tracking.",
+        "NSLocationWhenInUseUsageDescription": "This app uses your location to update your trip in real time.",
+        "UIBackgroundModes": ["location", "fetch"]
+      }
+    },
+    "android": {
+      "package": "com.kalyanpannangala.admingps",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "INTERNET"
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "googleServicesFile": "./google-services.json",
+      "foregroundService": {
+        "notificationTitle": "Admin GPS Tracker",
+        "notificationBody": "Location tracking is active."
+      },
+      "useNextNotificationsApi": true,
+      "edgeToEdge": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "b5acc3f7-4fdb-42fc-ac34-759ef5b6fe28"
+      }
+    },
+    "owner": "kalyanpannangala",
+    "newArchEnabled": true
+  }
+}
