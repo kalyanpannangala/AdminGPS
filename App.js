@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Alert, Text, TouchableOpacity, ActivityIndicator, AppState } from 'react-native';
+import { View, StyleSheet, Alert, Text, TouchableOpacity, ActivityIndicator, AppState, Linking } from 'react-native';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,8 +14,30 @@ export default function App() {
   const [status, setStatus] = useState('Requesting location...');
   const [showRetry, setShowRetry] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [dummy, setDummy] = useState(0);
+
+  const getTimeDifference = (lastTime) => {
+    const diffMs = Date.now() - new Date(lastTime).getTime();
+    const mins = Math.floor(diffMs / 60000);
+    const secs = Math.floor((diffMs % 60000) / 1000);
+
+    if (mins > 0) return `${mins} minute(s)`;
+    return `${secs} second(s)`;
+  };
+
+  // UI refresh interval
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDummy((prev) => prev + 1); // 🔁 Force UI refresh
+    }, 10000); // every 10s
+
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
+    let intervalId;
+
     (async () => {
       // Request permissions
       const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
@@ -26,13 +48,26 @@ export default function App() {
         return;
       }
 
+      // Start foreground location tracking every 10 seconds
+      intervalId = setInterval(async () => {
+        try {
+          const location = await Location.getCurrentPositionAsync({});
+          const { latitude, longitude } = location.coords;
+          console.log('📍 Foreground location:', latitude, longitude);
+          await sendLocation(latitude, longitude);
+          setLastUpdated(new Date()); // ⏱️ Update the timestamp state
+        } catch (err) {
+          console.warn('Failed to get foreground location:', err);
+        }
+      }, 10000); // 10 seconds
+
       // Start background updates if not already started
       const hasStarted = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME);
       if (!hasStarted) {
         await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
           accuracy: Location.Accuracy.High,
-          timeInterval: 300000, // every 5 minutes
-          distanceInterval: 50, // or every 50 meters moved
+          timeInterval: 10000, // every 10 seconds
+          distanceInterval: 1, // or every 50 meters moved
           showsBackgroundLocationIndicator: true,
           foregroundService: {
             notificationTitle: 'Admin GPS Tracker',
@@ -45,14 +80,25 @@ export default function App() {
       try {
         const location = await Location.getCurrentPositionAsync({});
         await sendLocation(location.coords.latitude, location.coords.longitude);
+        setLastUpdated(new Date()); // ⏱️ Update the timestamp state
+        setStatus('✅ Live tracking started');
+        setIsLoading(false);
       } catch (err) {
         console.warn('Failed to send initial location:', err);
+        setStatus('❌ Failed to start tracking');
+        setIsLoading(false);
       }
     })();
+
     const subscription = AppState.addEventListener("change", (state) => {
       if (state === "active") startLocationUpdates();
     });
-    return () => subscription.remove();
+
+    // Cleanup when component unmounts
+    return () => {
+      clearInterval(intervalId);
+      subscription.remove();
+    };
   }, []);
 
   const startLocationUpdates = async () => {
@@ -141,9 +187,17 @@ export default function App() {
         )}
 
         <View style={styles.footer}>
+          <Text style={styles.footerText}>🟡 Last seen: {getTimeDifference(lastUpdated)} ago</Text>
           <Text style={styles.footerText}>Tracking active: {new Date().toLocaleTimeString()}</Text>
         </View>
       </View>
+
+      <TouchableOpacity
+        style={styles.developerButton}
+        onPress={() => Linking.openURL('https://www.linkedin.com/in/kalyanpannangala')}
+      >
+        <Text style={styles.developerText}>Developed by <Text style={styles.developerName}>Kalyan Pannangala</Text></Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -168,6 +222,8 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
         }),
       });
       console.log('✅ Location sent:', latitude, longitude);
+      // Note: setLastUpdated can't be called from background task
+      // The timestamp will be updated when foreground tracking runs
     } catch (err) {
       console.error('🚨 Failed to send location', err);
     }
@@ -192,4 +248,7 @@ const styles = StyleSheet.create({
   buttonText: { color: 'white', fontSize: 18, fontWeight: '600' },
   footer: { borderTopWidth: 1, borderTopColor: '#eee', marginTop: 25, paddingTop: 15 },
   footerText: { color: '#7f8c8d', fontSize: 14, textAlign: 'center' },
+  developerButton: { marginTop: 30, alignItems: 'center' },
+  developerText: { color: '#95a5a6', fontSize: 12, textAlign: 'center', fontStyle: 'italic' },
+  developerName: { color: '#3498db', fontWeight: '600' },
 });

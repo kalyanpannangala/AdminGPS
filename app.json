@@ -19,7 +19,10 @@
       "infoPlist": {
         "NSLocationAlwaysAndWhenInUseUsageDescription": "This app needs access to your location at all times for real-time GPS tracking.",
         "NSLocationWhenInUseUsageDescription": "This app uses your location to update your trip in real time.",
-        "UIBackgroundModes": ["location", "fetch"]
+        "UIBackgroundModes": [
+          "location",
+          "fetch"
+        ]
       }
     },
     "android": {
@@ -35,7 +38,6 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "googleServicesFile": "./google-services.json",
       "foregroundService": {
         "notificationTitle": "Admin GPS Tracker",
         "notificationBody": "Location tracking is active."
